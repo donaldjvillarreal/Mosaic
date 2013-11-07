@@ -1,0 +1,19 @@
+<RCC>
+    <qresource prefix="/icons">
+	<file>icons/file-load.png</file>
+        <file>icons/file-new.png</file>
+        <file>icons/file-save.png</file>
+        <file>icons/view-layer-manager.png</file>
+        <file>icons/view-zoomin.png</file>
+        <file>icons/view-zoomout.png</file>
+	<file>icons/tool-pencil-22.png</file>
+	<file>icons/null-tile.png</file>
+	<file>icons/tool-eraser-22.png</file>
+	<file>icons/tool-by-color-select-22.png</file>
+	<file>icons/tool-none-icon.png</file>
+	<file>icons/tool-fuzzy-select-22.png</file>
+	<file>icons/tool-rect-select-22.png</file>
+	<file>icons/tool-bucket-fill-22.png</file>
+	<file>icons/tool-color-picker-22.png</file>
+    </qresource>
+</RCC>
