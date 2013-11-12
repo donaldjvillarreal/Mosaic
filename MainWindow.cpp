@@ -323,18 +323,17 @@ void MainWindow::createWidgets()
         m_tabPreview->addTab(m_framePalette,"Palette");
         m_tabPreview->addTab(m_frameInfo,	"Info");
         m_controlPanel = new ControlPanel;
-        m_controlPanel->setMinimumSize(300, QSizePolicy::Expanding);
+        m_controlPanel->setMinimumSize(350, QSizePolicy::Expanding);
 
-        QHBoxLayout *hbox = new QHBoxLayout;
-        hbox->addWidget(m_tabPreview);
-        hbox->addWidget(m_controlPanel);
-        hbox->setContentsMargins(0, 0, 0, 0);
+        QList<int> sizes;
+        sizes << 700 << 350;
 
-        QWidget *w = new QWidget;
-        w->setLayout(hbox);
-        setCentralWidget(w);
-        w->setContentsMargins(0, 0, 0, 0);
+        QSplitter *mySplitter = new QSplitter;
+        mySplitter->addWidget(m_tabPreview);
+        mySplitter->addWidget(m_controlPanel);
+        mySplitter->setSizes(sizes);
 
+        setCentralWidget(mySplitter);
 }
 
 void

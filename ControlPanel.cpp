@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 #include "ControlPanel.h"
 #include "Globals.h"
+#include "HSL.h"
 
 ControlPanel::ControlPanel(QWidget *parent, Qt::WindowFlags f)
         :QWidget(parent, f)
@@ -25,19 +26,24 @@ void ControlPanel::createPanelTree()
     m_tree->setAnimated(true);	// animate expand/collapse
     m_tree->setSelectionMode(QAbstractItemView::NoSelection);
     m_tree->setFocusPolicy(Qt::NoFocus);
-    m_tree->setFixedWidth(350);
     m_tree->setSizePolicy(	QSizePolicy::Minimum,
                             QSizePolicy::Expanding);
 
     // create control panel groupboxes
     m_group.push_back(createGroupInput());
     m_group.push_back(createGroupSize());
+    m_group.push_back(createGroupRender());
+    m_group.push_back(createGroupTile());
+    m_group.push_back(createGroupGrout());
 
     // init font and string list for control panel tree widget
-    QFont font("Arial", 12, QFont::Bold);
+    QFont headerFont("Arial", 13, QFont::Bold);
     QStringList treeNameList;
     treeNameList 	<< " Input Settings"; //add other treeItems
     treeNameList 	<< " Group Size";
+    treeNameList    << " Mosaic Rendering";
+    treeNameList    << " Tile Palette";
+    treeNameList    << " Grout";
 
     // create each control panel in tree
     for(int i = 0; i < m_group.size(); ++i) {
@@ -47,12 +53,15 @@ void ControlPanel::createPanelTree()
 
         // make pushbutton to expand/collapse control panel; set its properties
         m_button.push_back(new QPushButton(treeNameList[i]));
+        m_button[i]->setFlat(true);
+        m_button[i]->setFont(headerFont);
+        m_button[i]->setStyleSheet("text-align: left");
 
         // set the header item to be a pushbutton
+        m_group[i]->setMinimumWidth(300);
         m_tree->setItemWidget(m_header[i], 0, m_button[i]);
 
         // set the widget item to be a groupbox
-        m_group[i]->setFixedWidth(320);
         m_tree->setItemWidget(m_item[i], 0, m_group[i]);
 
         // init signal/slot connections to allow
@@ -98,11 +107,12 @@ ControlPanel::createGroupInput()
             case 1: m_sliderIn[i]->setRange(-100, 100); break; // contrast
             case 2: m_sliderIn[i]->setRange(-180, 180); break; // hue
             case 3: m_sliderIn[i]->setRange(-100, 100); break; // saturation
-            case 4: m_sliderIn[i]->setRange(-100, 100); break; //lightness
+            case 4: m_sliderIn[i]->setRange(-100, 100); break; // lightness
         }
 
         // init label for slider value
         m_labelIn[i] = new QLabel(QString("%1").arg(0, 5));
+        m_labelIn[i]->setAlignment(Qt::AlignCenter);
 
         // set width of reset buttons
         m_buttonIn[i]->setFixedWidth(70);
@@ -209,28 +219,44 @@ QGroupBox*
 ControlPanel::createGroupSize()
 {
     QLabel *label[2];
+    label[0] = new QLabel("Width");
+    label[1] = new QLabel("Height");
     for(int i=0; i<2; i++)
     {
-        label[i] = new QLabel("Width");
-        label[i]->setAlignment(Qt::AlignRight);
+        label[i]->setAlignment(Qt::AlignLeft);
+        label[i]->setAlignment(Qt::AlignBottom);
     }
 
     QTextEdit *input[2];
     for(int i=0; i<2; i++)
     {
         input[i] = new QTextEdit;
-        input[i]->setFixedHeight(27);
+        input[i]->setFixedHeight(20);
+        input[i]->verticalScrollBar()->hide();
         input[i]->setAlignment(Qt::AlignLeft);
+        input[i]->setAlignment(Qt::AlignBottom);
     }
 
+    QStackedWidget *stackedWidget = new QStackedWidget;
+    stackedWidget->addWidget(new QLabel("in"));
+    stackedWidget->addWidget(new QLabel("cm"));
+    stackedWidget->addWidget(new QLabel("tiles"));
+
+    QStackedWidget *stackedWidget2 = new QStackedWidget;
+    stackedWidget2->addWidget(new QLabel("in"));
+    stackedWidget2->addWidget(new QLabel("cm"));
+    stackedWidget2->addWidget(new QLabel("tiles"));
+
+
     QGridLayout *grid = new QGridLayout;
-    grid->setColumnMinimumWidth(2,35);
+    grid->setColumnMinimumWidth(2,40);
     for(int i=0; i<2; i++)
     {
         grid->addWidget(label[i],i,0);
         grid->addWidget(input[i],i,1);
-        grid->addWidget(new QLabel("in"),i,2);
     }
+    grid->addWidget(stackedWidget,0,2);
+    grid->addWidget(stackedWidget2,1,2);
 
     QRadioButton *radioUS = new QRadioButton("US");
     radioUS-> setChecked(true);
@@ -249,11 +275,17 @@ ControlPanel::createGroupSize()
     bGroup->addButton(radioT,2);
     bGroup->setExclusive(true);
 
-    QHBoxLayout *stacklayout = new QHBoxLayout;
-    stacklayout->addLayout(grid);
-    stacklayout->addLayout(layoutRadio);
+    QHBoxLayout *finalLayout = new QHBoxLayout;
+    finalLayout->addLayout(grid);
+    finalLayout->addLayout(layoutRadio);
+
     QGroupBox *groupBox = new QGroupBox;
-    groupBox->setLayout(stacklayout);
+    groupBox->setLayout(finalLayout);
+
+    connect(bGroup,                 SIGNAL(buttonClicked(int)),
+            stackedWidget,          SLOT(setCurrentIndex(int)));
+    connect(bGroup,                 SIGNAL(buttonClicked(int)),
+            stackedWidget2,         SLOT(setCurrentIndex(int)));
 
     return groupBox;
 }
@@ -262,22 +294,116 @@ ControlPanel::createGroupSize()
 QGroupBox*
 ControlPanel::createGroupRender()
 {
-    // init group box
+    QLabel *label[4];
+    label[0] = new QLabel("Style");
+    label[0]->setAlignment(Qt::AlignLeft);
+    label[1] = new QLabel("Dither");
+    label[1]->setAlignment(Qt::AlignLeft);
+    label[2] = new QLabel("0");
+    label[2]->setAlignment(Qt::AlignRight);
+    label[3] = new QLabel("%");
+    label[3]->setAlignment(Qt::AlignLeft);
+    QHBoxLayout *dithLabel = new QHBoxLayout;
+    dithLabel->addWidget(label[2]);
+    dithLabel->addWidget(label[3]);
+
+    QSlider *dithslider = new QSlider(Qt::Horizontal);
+    dithslider->setValue(0);
+    dithslider->setRange(0, 100);
+
+    QComboBox *comboBox = new QComboBox;
+    comboBox->addItem("Standard");
+
+    QGridLayout *grid = new QGridLayout;
+    grid->setColumnMinimumWidth(2,35);
+    for(int i=0; i<2; i++)
+    {
+        grid->addWidget(label[i],i,0);
+    }
+    grid->addWidget(comboBox,0,1);
+    grid->addWidget(dithslider,1,1);
+    grid->addLayout(dithLabel,1,2);
+
     QGroupBox *groupBox = new QGroupBox;
-    QVBoxLayout *vbox = new QVBoxLayout;
-    vbox->addWidget(new QPushButton("Empty"));
-    groupBox->setLayout(vbox);
+    groupBox->setLayout(grid);
+
+    connect(dithslider,         SIGNAL(sliderMoved(int)),
+            label[2],           SLOT(setNum(int)));
     return groupBox;
 }
 
 QGroupBox*
 ControlPanel::createGroupTile()
 {
-    // init group box
+    QComboBox *comboBox = new QComboBox;
+    comboBox->addItem("0.375 -VG in");
+    comboBox->addItem("0.5   -PG in");
+    comboBox->addItem("0.5   -SG in");
+    comboBox->addItem("0.5   -UP in");
+    comboBox->addItem("0.5625-ST in");
+    comboBox->addItem("0.75  -VG in");
+    comboBox->addItem("1     -SG in");
+    comboBox->addItem("1     -UP in");
+
+    QHBoxLayout *tileSize = new QHBoxLayout;
+    tileSize->addWidget(new QLabel("Tile Size"));
+    tileSize->addWidget(comboBox);
+
+    QRadioButton *radioAll = new QRadioButton("All");
+    radioAll-> setChecked(true);
+    QRadioButton *radioAvail = new QRadioButton("Available");
+    radioAvail-> setChecked(false);
+    QRadioButton *radioUsed = new QRadioButton("Used");
+    radioUsed-> setChecked(false);
+
+    QButtonGroup *bGroup = new QButtonGroup;
+    QHBoxLayout *layoutRadio = new QHBoxLayout;
+    layoutRadio->addWidget(radioAll);
+    layoutRadio->addWidget(radioAvail);
+    layoutRadio->addWidget(radioUsed);
+    bGroup->addButton(radioAll,0);
+    bGroup->addButton(radioAvail,1);
+    bGroup->addButton(radioUsed,2);
+    bGroup->setExclusive(true);
+
+    QTreeWidget *tileTree = new QTreeWidget();
+    tileTree->setHeaderHidden(false);	// hide tree header
+    //tileTree->setIndentation(10);	// children indentation
+    tileTree->setAnimated(true);	// animate expand/collapse
+    tileTree->setSelectionMode(QAbstractItemView::NoSelection);
+    tileTree->setFocusPolicy(Qt::NoFocus);
+    tileTree->setSizePolicy(QSizePolicy::Minimum,
+                            QSizePolicy::Expanding);
+
+    QStringList headerLabels;
+    headerLabels.push_back("  ");
+    headerLabels.push_back("Tile");
+    headerLabels.push_back("id");
+    headerLabels.push_back("Avail");
+    headerLabels.push_back("Used");
+
+    tileTree->setColumnCount(headerLabels.count());
+    tileTree->setHeaderLabels(headerLabels);
+    tileTree->setColumnWidth(0,25);
+    tileTree->setColumnWidth(1,80);
+    tileTree->setColumnWidth(2,40);
+    tileTree->setColumnWidth(3,50);
+    tileTree->setColumnWidth(4,50);
+
+    QStringList VGNameList;
+    VGNameList 	<< " Vitreous Glass";
+    VGNameList 	<< " Vitreous Glass - gold";
+    VGNameList    << " Vitreous Glass - metallic";
+    VGNameList    << " Vitreous Glass - opalescent";
+    VGNameList    << " Vitreous Glass - silver";
+
+    QVBoxLayout *paletteLayout = new QVBoxLayout;
+    paletteLayout->addLayout(tileSize);
+    paletteLayout->addLayout(layoutRadio);
+    paletteLayout->addWidget(tileTree);
+
     QGroupBox *groupBox = new QGroupBox;
-    QVBoxLayout *vbox = new QVBoxLayout;
-    vbox->addWidget(new QPushButton("Empty"));
-    groupBox->setLayout(vbox);
+    groupBox->setLayout(paletteLayout);
     return groupBox;
 }
 
@@ -510,21 +636,26 @@ ControlPanel::resetInputControls()
 void
 ControlPanel::revertOriginal()
 {
-    resetInputControls();
-
     // error checking
     TesseraParameters &params = g_mainWindow->parameters();
     const QImage &origImage = params.originalImage();
     const QImage &curImage = params.image();
     if(origImage.isNull() || curImage.isNull())
+    {
+        for(int i=0; i<5; ++i)
+        {
+            m_sliderIn[i]->setValue(0);
+            m_labelIn[i]->setText(QString::number(0));
+        }
         return;
+    }
 
     g_mainWindow->parameters().setBrightness(0);
     g_mainWindow->parameters().setContrast	(0);
     g_mainWindow->parameters().setHue       (0);
     g_mainWindow->parameters().setSaturation(0);
     g_mainWindow->parameters().setLightness	(0);
-
+    resetInputControls();
 
     m_image = origImage;
     params.setImage(m_image);
@@ -553,7 +684,8 @@ ControlPanel::updateInputImage(TesseraParameters::ColorMode mode)
 
     QImage inImage = m_image;
     QImage outImage;
-    if(params.colorMode() == TesseraParameters::RGB) {// brightness-contrast
+    if(params.colorMode() == TesseraParameters::RGB)
+    {   // brightness-contrast
         // get contrast and brightness
         int	contrast	= params.contrast();
         int	brightness	= params.brightness();
@@ -593,15 +725,17 @@ ControlPanel::updateInputImage(TesseraParameters::ColorMode mode)
                 }
             }
         }
-    } else {			// hue-saturation
+    }
+    else
+    {	// hue-saturation
         double h = params.hue() / 180.0;
         double s = params.saturation() / 100.0;
         double l = params.lightness() / 100.0;
-        /*HSL hsl;
-        hsl.setHue       (HSL::AllHues, h);
+        HSL hsl;
+        hsl.setHue	 (HSL::AllHues, h);
         hsl.setSaturation(HSL::AllHues, s);
         hsl.setLightness (HSL::AllHues, l);
-        hsl.adjustHueSaturation(inImage, outImage);*/
+        hsl.adjustHueSaturation(inImage, outImage);
     }
     params.setImage(outImage);
     g_mainWindow->updateInputFrame();

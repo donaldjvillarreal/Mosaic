@@ -17,10 +17,12 @@ HEADERS += ControlPanel.h \
            Globals.h \
            ImageWindow.h \
            MainWindow.h \
-           TesseraParameters.h
+           TesseraParameters.h \
+           HSL.h
 SOURCES += ControlPanel.cpp \
            ImageWindow.cpp \
            main.cpp \
            MainWindow.cpp \
-           TesseraParameters.cpp
+           TesseraParameters.cpp \
+           HSL.cpp
 RESOURCES += mainres.qrc

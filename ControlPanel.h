@@ -32,7 +32,6 @@ public slots:
     void			revertOriginal		();
     void			resetInputControls	();
     void			resetControls		();
-
     void            expandPanels        ();
 
 protected:
@@ -42,8 +41,7 @@ protected:
     QGroupBox*  createGroupRender   ();
     QGroupBox*  createGroupTile     ();
     QGroupBox*  createGroupGrout    ();
-
-    int		updateInputImage (TesseraParameters::ColorMode mode);
+    int         updateInputImage (TesseraParameters::ColorMode mode);
 
 private:
     QTreeWidget                *m_tree;
